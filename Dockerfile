@@ -1,38 +1,22 @@
 # Whisper Transcription Service
-# Multi-stage build for smaller image size
+# Optimized build for smaller image size
 
-FROM python:3.11-slim as builder
-
-WORKDIR /app
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Production stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Copy installed packages from builder
-COPY --from=builder /root/.local /root/.local
-
-# Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Install only faster-whisper (smaller than openai-whisper)
+# This avoids installing full PyTorch
+RUN pip install --no-cache-dir \
+    flask>=2.0.0 \
+    faster-whisper>=0.10.0 \
+    gunicorn>=21.0.0
 
 # Copy application code
 COPY app.py .
@@ -51,8 +35,8 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" || exit 1
 
-# Run the application with gunicorn for production
-CMD ["python", "app.py"]
+# Run with gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "300", "app:app"]
