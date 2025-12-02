@@ -15,39 +15,35 @@ env:
   PORT: "5000"
   WHISPER_MODEL: "base"
   WHISPER_DEVICE: "cpu"
-  PRELOAD_MODEL: "true"
+  PRELOAD_MODEL: "false"  # Don't preload - load on first request instead
   PYTHONUNBUFFERED: "1"
 
 resources:
   requests:
     memory: "2Gi"
-    cpu: "1000m"
+    cpu: "500m"
   limits:
     memory: "4Gi"
     cpu: "2000m"
 
-# For GPU support, uncomment and modify:
-# resources:
-#   limits:
-#     nvidia.com/gpu: 1
-
+# Longer startup time for model download
 livenessProbe:
   httpGet:
     path: /health
     port: 5000
-  initialDelaySeconds: 60
+  initialDelaySeconds: 30
   periodSeconds: 30
   timeoutSeconds: 10
-  failureThreshold: 3
+  failureThreshold: 5
 
 readinessProbe:
   httpGet:
     path: /health
     port: 5000
-  initialDelaySeconds: 30
+  initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 5
-  failureThreshold: 3
+  failureThreshold: 5
 
 nodeSelector: {}
 

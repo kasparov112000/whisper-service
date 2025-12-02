@@ -66,10 +66,15 @@ jobs:
           helm upgrade --install ${{ env.HELM_RELEASE }} ./helm \
             --set image.repository=${{ env.DOCKER_IMAGE }} \
             --set image.tag=${{ github.sha }} \
-            --wait \
-            --timeout 10m
+            --atomic \
+            --timeout 5m
 
-      - name: Verify deployment
+      - name: Show deployment status
+        if: always()
         run: |
-          kubectl rollout status deployment/${{ env.HELM_RELEASE }}
-          kubectl get pods -l app=${{ env.HELM_RELEASE }}
+          echo "=== Deployment Status ==="
+          kubectl get deployment ${{ env.HELM_RELEASE }} -o wide || true
+          echo "=== Pods ==="
+          kubectl get pods -l app=${{ env.HELM_RELEASE }} -o wide || true
+          echo "=== Events ==="
+          kubectl get events --sort-by='.lastTimestamp' | grep -i whisper | tail -10 || true
