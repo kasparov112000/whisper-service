@@ -13,19 +13,13 @@ service:
 
 env:
   PORT: "5000"
-  WHISPER_MODEL: "tiny"  # Use tiny model for minimal resources
+  WHISPER_MODEL: "tiny"
   WHISPER_DEVICE: "cpu"
   PRELOAD_MODEL: "false"
   PYTHONUNBUFFERED: "1"
 
-# Minimal resources to fit in constrained cluster
-resources:
-  requests:
-    memory: "256Mi"
-    cpu: "100m"
-  limits:
-    memory: "1Gi"
-    cpu: "1000m"
+# No resource requests to allow scheduling on constrained cluster
+resources: {}
 
 livenessProbe:
   httpGet:
