@@ -1,0 +1,56 @@
+# Whisper Service Helm Values
+
+replicaCount: 1
+
+image:
+  repository: kasparov112000/learnbytesting-whisper-service
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 5000
+
+env:
+  PORT: "5000"
+  WHISPER_MODEL: "base"
+  WHISPER_DEVICE: "cpu"
+  PRELOAD_MODEL: "true"
+  PYTHONUNBUFFERED: "1"
+
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "1000m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+# For GPU support, uncomment and modify:
+# resources:
+#   limits:
+#     nvidia.com/gpu: 1
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -1,0 +1,12 @@
+# Core dependencies
+flask>=2.0.0
+
+# Whisper transcription - choose one or both:
+# OpenAI Whisper (original, uses PyTorch)
+openai-whisper>=20231117
+
+# Faster Whisper (uses CTranslate2, faster and more memory efficient)
+faster-whisper>=0.10.0
+
+# Additional dependencies that might be needed
+numpy>=1.20.0
