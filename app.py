@@ -74,12 +74,14 @@ def load_model():
         raise
 
 
-def transcribe_audio(audio_path: str, language: str = None) -> str:
+def transcribe_audio(audio_path: str, language: str = None) -> dict:
     """Transcribe audio using the loaded model"""
     loaded_model, loaded_model_type = load_model()
 
     print(f"Transcribing with {loaded_model_type}...")
     start_time = time.time()
+    duration = 0
+    detected_language = language
 
     if loaded_model_type == 'faster-whisper':
         # faster-whisper API
@@ -96,6 +98,8 @@ def transcribe_audio(audio_path: str, language: str = None) -> str:
             transcript_parts.append(segment.text.strip())
 
         transcript = ' '.join(transcript_parts)
+        duration = info.duration if hasattr(info, 'duration') else 0
+        detected_language = info.language if hasattr(info, 'language') else language
     else:
         # openai-whisper API
         result = loaded_model.transcribe(
@@ -104,11 +108,17 @@ def transcribe_audio(audio_path: str, language: str = None) -> str:
             fp16=False  # Use fp32 for CPU
         )
         transcript = result['text'].strip()
+        detected_language = result.get('language', language)
 
     elapsed = time.time() - start_time
     print(f"[OK] Transcription completed in {elapsed:.1f}s: {len(transcript)} characters")
 
-    return transcript
+    return {
+        'transcript': transcript,
+        'processing_time': elapsed,
+        'duration': duration,
+        'language': detected_language
+    }
 
 
 @app.route('/health', methods=['GET'])
@@ -182,11 +192,13 @@ def transcribe():
 
         try:
             # Transcribe
-            transcript = transcribe_audio(temp_path, language)
+            result = transcribe_audio(temp_path, language)
 
             return jsonify({
-                'transcript': transcript,
-                'language': language,
+                'transcript': result['transcript'],
+                'language': result['language'],
+                'duration': result['duration'],
+                'processing_time': result['processing_time'],
                 'model': MODEL_SIZE
             })
 
